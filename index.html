@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>居家智慧營養監測系統 - Prototype</title>
+    <style>
+        /* --- 基礎設定與變數 --- */
+        :root {
+            --primary-color: #2A7ADE; /* 醫療藍 */
+            --bg-color: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-main: #334155;
+            --text-muted: #64748B;
+            --accent-color: #10B981; /* 成功綠 */
+            --warning-color: #F59E0B;
+            --border-radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #E2E8F0; /* 模擬桌面上瀏覽時的背景 */
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        /* --- 手機容器模擬 --- */
+        #mobile-container {
+            width: 100%;
+            max-width: 480px;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- 頁面切換邏輯 --- */
+        .screen {
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+            flex-grow: 1;
+        }
+        .screen.active { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- 通用元件 --- */
+        h1, h2, h3 { color: var(--primary-color); margin-top: 0; }
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: var(--border-radius);
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: opacity 0.2s;
+            margin-bottom: 12px;
+            width: 100%;
+        }
+        .btn:active { opacity: 0.8; }
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-muted); }
+        input, select, textarea {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #CBD5E1;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+        }
+
+        /* --- 1. 登入頁 --- */
+        #login-screen { justify-content: center; text-align: center; }
+        .logo-placeholder {
+            width: 80px; height: 80px; background: var(--primary-color);
+            border-radius: 20px; margin: 0 auto 20px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 40px;
+        }
+
+        /* --- 2. 首頁 --- */
+        .dashboard-card {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .date-text { font-size: 1.2rem; font-weight: bold; margin-bottom: 8px; }
+
+        /* --- 3. 新增紀錄頁 --- */
+        .upload-box {
+            border: 2px dashed #CBD5E1;
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            cursor: pointer;
+            background: #fff;
+        }
+        .loading-overlay {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(255,255,255,0.9);
+            display: none; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 100;
+        }
+        .spinner {
+            width: 50px; height: 50px; border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- 4. 分析結果頁 --- */
+        .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .result-card {
+            background: white; padding: 15px; border-radius: 12px;
+            box-shadow: var(--shadow); border-left: 4px solid var(--primary-color);
+        }
+        .result-card.full { grid-column: span 2; border-left: 4px solid var(--warning-color); }
+        .val { font-size: 1.4rem; font-weight: bold; display: block; }
+        .unit { font-size: 0.8rem; color: var(--text-muted); }
+        .disclaimer {
+            font-size: 13px; color: var(--text-muted);
+            background: #F1F5F9; padding: 15px; border-radius: 8px; margin-bottom: 20px;
+        }
+
+        /* --- 5. 歷史紀錄頁 --- */
+        .history-list { list-style: none; padding: 0; }
+        .history-item {
+            background: white; padding: 16px; border-radius: 12px;
+            margin-bottom: 12px; box-shadow: var(--shadow);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .history-info h4 { margin: 0; font-size: 16px; }
+        .history-info p { margin: 0; font-size: 14px; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+    <div id="mobile-container">
+        
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px; font-weight: bold;">影像辨識分析中...</p>
+        </div>
+
+        <section id="login-screen" class="screen active">
+            <div class="logo-placeholder">🥗</div>
+            <h1>居家智慧營養監測</h1>
+            <p style="color: var(--text-muted); margin-bottom: 30px;">原型展示版本</p>
+            
+            <div class="input-group">
+                <input type="text" placeholder="請輸入帳號" value="demo_user">
+            </div>
+            <div class="input-group">
+                <input type="password" placeholder="請輸入密碼" value="******">
+            </div>
+            <button class="btn" onclick="navigateTo('dashboard-screen')">登入系統</button>
+        </section>
+
+        <section id="dashboard-screen" class="screen">
+            <h3>您好，今天過得如何？</h3>
+            <div class="dashboard-card">
+                <div class="date-text" id="current-date">2026年2月2日</div>
+                <p id="dashboard-status">今日尚未新增飲食紀錄</p>
+            </div>
+            
+            <button class="btn" onclick="navigateTo('add-meal-screen')">＋ 新增飲食紀錄</button>
+            <button class="btn btn-outline" onclick="renderHistory(); navigateTo('history-screen')">📋 查看歷史紀錄</button>
+        </section>
+
+        <section id="add-meal-screen" class="screen">
+            <h3 onclick="navigateTo('dashboard-screen')" style="cursor: pointer;">← 返回首頁</h3>
+            <h2>新增飲食紀錄</h2>
+            
+            <label>拍照或上傳餐點照片</label>
+            <div class="upload-box" onclick="document.getElementById('file-input').click()">
+                <span id="upload-text">📸 點擊開啟相機 / 上傳</span>
+                <input type="file" id="file-input" style="display:none" onchange="handleFile(this)">
+            </div>
+
+            <div class="input-group">
+                <label>餐別</label>
+                <select id="meal-type">
+                    <option value="早餐">早餐</option>
+                    <option value="午餐">午餐</option>
+                    <option value="晚餐">晚餐</option>
+                    <option value="點心">點心 / 其他</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>備註 (選填)</label>
+                <textarea id="meal-note" rows="3" placeholder="例如：今天胃口不錯"></textarea>
+            </div>
+
+            <button class="btn" onclick="simulateAnalysis()">送出分析</button>
+        </section>
+
+        <section id="analysis-screen" class="screen">
+            <h2>影像分析結果</h2>
+            <div class="disclaimer">
+                ⚠️ <strong>聲明：</strong>此為系統自動估算之參考資訊，並非醫療診斷。數值可能隨烹飪方式有所誤差。
+            </div>
+
+            <div class="result-grid">
+                <div class="result-card">
+                    <label>熱量估算</label>
+                    <span class="val" id="res-kcal">--</span><span class="unit">kcal</span>
+                </div>
+                <div class="result-card">
+                    <label>蛋白質</label>
+                    <span class="val" id="res-protein">--</span><span class="unit">g</span>
+                </div>
+                <div class="result-card">
+                    <label>碳水化合物</label>
+                    <span class="val" id="res-carbs">--</span><span class="unit">g</span>
+                </div>
+                <div class="result-card">
+                    <label>脂肪</label>
+                    <span class="val" id="res-fat">--</span><span class="unit">g</span>
+                </div>
+                <div class="result-card full">
+                    <label>建議質地等級 (IDDSI)</label>
+                    <span class="val" id="res-iddsi">Level --</span>
+                    <p style="font-size: 12px; color: var(--text-muted); margin: 5px 0 0 0;">
+                        依影像判斷，此餐點質地較接近上述等級。
+                    </p>
+                </div>
+            </div>
+
+            <div class="disclaimer" style="background: #E0F2FE;">
+                💡 <strong>營養提醒：</strong>維持飲食多樣化有助於營養均衡，建議攝取足夠水分。
+            </div>
+
+            <button class="btn" onclick="saveAndFinish()">確認並返回首頁</button>
+        </section>
+
+        <section id="history-screen" class="screen">
+            <h3 onclick="navigateTo('dashboard-screen')" style="cursor: pointer;">← 返回首頁</h3>
+            <h2>歷史紀錄</h2>
+            <ul class="history-list" id="history-list">
+                </ul>
+        </section>
+
+    </div>
+
+    <script>
+        // --- 模擬資料庫 ---
+        let historyData = [
+            { date: '2026-02-01', type: '早餐', kcal: 450, iddsi: '7', note: '一般吐司與蛋' },
+            { date: '2026-02-01', type: '午餐', kcal: 620, iddsi: '6', note: '軟質雞肉麵' }
+        ];
+
+        let currentAnalysis = null;
+
+        // --- 路由切換 ---
+        function navigateTo(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        // --- 初始化日期 ---
+        document.getElementById('current-date').innerText = new Date().toLocaleDateString('zh-TW', {
+            year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
+        });
+
+        // --- 檔案上傳模擬 ---
+        function handleFile(input) {
+            if (input.files && input.files[0]) {
+                document.getElementById('upload-text').innerText = "✅ 已選取照片：" + input.files[0].name;
+            }
+        }
+
+        // --- 模擬分析流程 ---
+        function simulateAnalysis() {
+            document.getElementById('loading-overlay').style.display = 'flex';
+            
+            // 模擬 2 秒的 AI 辨識延遲
+            setTimeout(() => {
+                document.getElementById('loading-overlay').style.display = 'none';
+                
+                // 產生隨機模擬數據
+                currentAnalysis = {
+                    date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD
+                    type: document.getElementById('meal-type').value,
+                    kcal: Math.floor(Math.random() * (700 - 300) + 300),
+                    protein: Math.floor(Math.random() * (30 - 15) + 15),
+                    carbs: Math.floor(Math.random() * (80 - 40) + 40),
+                    fat: Math.floor(Math.random() * (25 - 10) + 10),
+                    iddsi: Math.floor(Math.random() * 4 + 4), // 模擬 Level 4~7
+                    note: document.getElementById('meal-note').value
+                };
+
+                // 填入分析結果頁
+                document.getElementById('res-kcal').innerText = currentAnalysis.kcal;
+                document.getElementById('res-protein').innerText = currentAnalysis.protein;
+                document.getElementById('res-carbs').innerText = currentAnalysis.carbs;
+                document.getElementById('res-fat').innerText = currentAnalysis.fat;
+                document.getElementById('res-iddsi').innerText = "Level " + currentAnalysis.iddsi;
+
+                navigateTo('analysis-screen');
+            }, 2000);
+        }
+
+        // --- 儲存並返回 ---
+        function saveAndFinish() {
+            historyData.unshift(currentAnalysis); // 新增到列表最前方
+            document.getElementById('dashboard-status').innerText = `今日已記錄 ${currentAnalysis.type} (${currentAnalysis.kcal} kcal)`;
+            
+            // 清除輸入欄
+            document.getElementById('upload-text').innerText = "📸 點擊開啟相機 / 上傳";
+            document.getElementById('meal-note').value = "";
+            
+            navigateTo('dashboard-screen');
+        }
+
+        // --- 渲染歷史紀錄 ---
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            
+            historyData.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = 'history-item';
+                li.onclick = () => alert(`詳細備註：${item.note || '無'}`);
+                li.innerHTML = `
+                    <div class="history-info">
+                        <h4>${item.date} ${item.type}</h4>
+                        <p>熱量: ${item.kcal} kcal | 質地: Level ${item.iddsi}</p>
+                    </div>
+                    <div style="color: var(--primary-color)">❯</div>
+                `;
+                list.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>
