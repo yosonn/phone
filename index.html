@@ -3,360 +3,457 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>居家智慧營養監測系統 - Prototype</title>
+    <title>NutriAI Mobile - 智慧營養輔助</title>
     <style>
-        /* --- 基礎設定與變數 --- */
         :root {
-            --primary-color: #2A7ADE; /* 醫療藍 */
-            --bg-color: #F8FAFC;
-            --card-bg: #FFFFFF;
-            --text-main: #334155;
-            --text-muted: #64748B;
-            --accent-color: #10B981; /* 成功綠 */
-            --warning-color: #F59E0B;
-            --border-radius: 12px;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --primary: #009688;
+            --primary-dark: #00796b;
+            --secondary: #2196f3;
+            --accent: #ff9800;
+            --danger: #f44336;
+            --success: #4caf50;
+            --bg: #f8f9fa;
+            --surface: #ffffff;
+            --text-main: #2d3436;
+            --text-sub: #636e72;
+            --shadow: 0 2px 10px rgba(0,0,0,0.05);
+            --radius: 12px;
+            --nav-height: 65px;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #E2E8F0; /* 模擬桌面上瀏覽時的背景 */
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            color: var(--text-main);
-            line-height: 1.6;
-        }
-
-        /* --- 手機容器模擬 --- */
-        #mobile-container {
-            width: 100%;
-            max-width: 480px;
-            min-height: 100vh;
-            background-color: var(--bg-color);
-            position: relative;
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        /* 基礎設定 */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, system-ui, sans-serif; }
+        body { 
+            background-color: var(--bg); 
+            color: var(--text-main); 
+            padding-bottom: calc(var(--nav-height) + 20px); 
             overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- 頁面切換邏輯 --- */
-        .screen {
-            display: none;
-            flex-direction: column;
-            padding: 20px;
-            animation: fadeIn 0.3s ease;
-            flex-grow: 1;
+        /* 頂部標題列 */
+        .top-bar {
+            position: sticky; top: 0; background: var(--surface);
+            padding: 15px 20px; display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); z-index: 100;
         }
-        .screen.active { display: flex; }
+        .app-title { font-size: 1.2rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 6px; }
+        .patient-badge { font-size: 0.75rem; background: #e0f2f1; color: var(--primary-dark); padding: 4px 10px; border-radius: 20px; font-weight: 600; }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        /* 容器與視圖 */
+        .container { padding: 15px; width: 100%; }
+        .view { display: none; animation: slideUp 0.3s ease-out; }
+        .view.active { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- 通用元件 --- */
-        h1, h2, h3 { color: var(--primary-color); margin-top: 0; }
-        .btn {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 16px;
-            border-radius: var(--border-radius);
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            text-align: center;
-            transition: opacity 0.2s;
-            margin-bottom: 12px;
-            width: 100%;
+        /* 底部導覽列 */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-height);
+            background: var(--surface); display: flex; justify-content: space-around;
+            align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); border-top: 1px solid #eee; z-index: 1000;
         }
-        .btn:active { opacity: 0.8; }
-        .btn-outline {
-            background-color: transparent;
-            border: 2px solid var(--primary-color);
-            color: var(--primary-color);
-        }
-        .input-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-muted); }
-        input, select, textarea {
-            width: 100%;
-            padding: 14px;
-            border: 1px solid #CBD5E1;
-            border-radius: var(--border-radius);
-            font-size: 16px;
-        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-sub); font-size: 0.7rem; cursor: pointer; transition: 0.2s; }
+        .nav-item svg { width: 24px; height: 24px; margin-bottom: 3px; }
+        .nav-item.active { color: var(--primary); font-weight: bold; }
 
-        /* --- 1. 登入頁 --- */
-        #login-screen { justify-content: center; text-align: center; }
-        .logo-placeholder {
-            width: 80px; height: 80px; background: var(--primary-color);
-            border-radius: 20px; margin: 0 auto 20px;
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 40px;
-        }
+        /* 卡片與元件 */
+        .card { background: var(--surface); border-radius: var(--radius); padding: 18px; margin-bottom: 15px; box-shadow: var(--shadow); }
+        .section-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .btn { border: none; padding: 14px; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 1rem; width: 100%; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); opacity: 0.9; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: #e0f2f1; color: var(--primary-dark); }
+        .btn-outline { background: transparent; border: 1px solid #ddd; color: var(--text-sub); }
 
-        /* --- 2. 首頁 --- */
-        .dashboard-card {
-            background: var(--card-bg);
-            padding: 24px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            margin-bottom: 24px;
-            text-align: center;
+        /* 拍照區塊 */
+        .camera-box {
+            border: 2px dashed #ddd; border-radius: var(--radius); height: 200px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: #fafafa; position: relative; overflow: hidden;
         }
-        .date-text { font-size: 1.2rem; font-weight: bold; margin-bottom: 8px; }
+        .camera-box input { position: absolute; opacity: 0; width: 100%; height: 100%; }
+        .preview-img { width: 100%; height: 100%; object-fit: cover; display: none; }
 
-        /* --- 3. 新增紀錄頁 --- */
-        .upload-box {
-            border: 2px dashed #CBD5E1;
-            padding: 40px 20px;
-            text-align: center;
-            border-radius: var(--border-radius);
-            margin-bottom: 20px;
-            cursor: pointer;
-            background: #fff;
-        }
-        .loading-overlay {
-            position: fixed; top:0; left:0; width:100%; height:100%;
-            background: rgba(255,255,255,0.9);
-            display: none; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 100;
-        }
-        .spinner {
-            width: 50px; height: 50px; border: 5px solid #f3f3f3;
-            border-top: 5px solid var(--primary-color);
-            border-radius: 50%; animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* 營養條 */
+        .nutri-row { margin-bottom: 12px; }
+        .nutri-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; }
+        .bar-bg { background: #eee; height: 8px; border-radius: 4px; overflow: hidden; }
+        .bar-fill { height: 100%; background: var(--primary); width: 0; transition: width 0.6s cubic-bezier(0.1, 0.7, 1.0, 0.1); }
 
-        /* --- 4. 分析結果頁 --- */
-        .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-        .result-card {
-            background: white; padding: 15px; border-radius: 12px;
-            box-shadow: var(--shadow); border-left: 4px solid var(--primary-color);
-        }
-        .result-card.full { grid-column: span 2; border-left: 4px solid var(--warning-color); }
-        .val { font-size: 1.4rem; font-weight: bold; display: block; }
-        .unit { font-size: 0.8rem; color: var(--text-muted); }
-        .disclaimer {
-            font-size: 13px; color: var(--text-muted);
-            background: #F1F5F9; padding: 15px; border-radius: 8px; margin-bottom: 20px;
-        }
+        /* 標籤 */
+        .tag-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .tag { font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; background: #f0f0f0; color: #555; }
+        .tag.blue { background: #e3f2fd; color: #1565c0; }
+        .tag.red { background: #ffebee; color: #c62828; }
 
-        /* --- 5. 歷史紀錄頁 --- */
-        .history-list { list-style: none; padding: 0; }
-        .history-item {
-            background: white; padding: 16px; border-radius: 12px;
-            margin-bottom: 12px; box-shadow: var(--shadow);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .history-info h4 { margin: 0; font-size: 16px; }
-        .history-info p { margin: 0; font-size: 14px; color: var(--text-muted); }
+        /* 歷史紀錄列表 */
+        .log-list { list-style: none; }
+        .log-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid #f0f0f0; }
+        .log-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+
+        /* 載入遮罩 */
+        .overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 2000; display: none; flex-direction: column; justify-content: center; align-items: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* 提示框 */
+        .info-box { padding: 12px; border-radius: 8px; font-size: 0.9rem; margin-top: 10px; border-left: 4px solid var(--primary); background: #f0fdfa; }
+        .info-box.warn { border-color: var(--accent); background: #fffbeb; }
+        .info-box.danger { border-color: var(--danger); background: #fef2f2; }
     </style>
 </head>
 <body>
 
-    <div id="mobile-container">
+    <div class="top-bar">
+        <div class="app-title">🥗 NutriAI</div>
+        <div class="patient-badge" id="header-patient-name">病人載入中...</div>
+    </div>
+
+    <div class="container">
         
-        <div id="loading-overlay" class="loading-overlay">
-            <div class="spinner"></div>
-            <p style="margin-top: 15px; font-weight: bold;">影像辨識分析中...</p>
+        <div id="view-home" class="view active">
+            <div class="section-title">今日概況</div>
+            <div class="card" style="background: linear-gradient(135deg, var(--primary) 0%, #4db6ac 100%); color: white;">
+                <p style="opacity: 0.9; font-size: 0.9rem;">歡迎回來，管理員</p>
+                <h2 style="margin: 5px 0;" id="home-greeting">載入中...</h2>
+                <p style="font-size: 0.8rem; margin-top: 10px;">目前狀態：飲食紀錄收集中</p>
+            </div>
+            
+            <div class="section-title">常用功能</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="card" onclick="app.navTo('view-upload')" style="text-align: center; margin-bottom: 0;">
+                    <div style="font-size: 2rem; margin-bottom: 5px;">📸</div>
+                    <div style="font-size: 0.9rem; font-weight: bold;">拍照分析</div>
+                </div>
+                <div class="card" onclick="app.navTo('view-advice')" style="text-align: center; margin-bottom: 0;">
+                    <div style="font-size: 2rem; margin-bottom: 5px;">💡</div>
+                    <div style="font-size: 0.9rem; font-weight: bold;">飲食建議</div>
+                </div>
+            </div>
         </div>
 
-        <section id="login-screen" class="screen active">
-            <div class="logo-placeholder">🥗</div>
-            <h1>居家智慧營養監測</h1>
-            <p style="color: var(--text-muted); margin-bottom: 30px;">原型展示版本</p>
-            
-            <div class="input-group">
-                <input type="text" placeholder="請輸入帳號" value="demo_user">
-            </div>
-            <div class="input-group">
-                <input type="password" placeholder="請輸入密碼" value="******">
-            </div>
-            <button class="btn" onclick="navigateTo('dashboard-screen')">登入系統</button>
-        </section>
-
-        <section id="dashboard-screen" class="screen">
-            <h3>您好，今天過得如何？</h3>
-            <div class="dashboard-card">
-                <div class="date-text" id="current-date">2026年2月2日</div>
-                <p id="dashboard-status">今日尚未新增飲食紀錄</p>
-            </div>
-            
-            <button class="btn" onclick="navigateTo('add-meal-screen')">＋ 新增飲食紀錄</button>
-            <button class="btn btn-outline" onclick="renderHistory(); navigateTo('history-screen')">📋 查看歷史紀錄</button>
-        </section>
-
-        <section id="add-meal-screen" class="screen">
-            <h3 onclick="navigateTo('dashboard-screen')" style="cursor: pointer;">← 返回首頁</h3>
-            <h2>新增飲食紀錄</h2>
-            
-            <label>拍照或上傳餐點照片</label>
-            <div class="upload-box" onclick="document.getElementById('file-input').click()">
-                <span id="upload-text">📸 點擊開啟相機 / 上傳</span>
-                <input type="file" id="file-input" style="display:none" onchange="handleFile(this)">
-            </div>
-
-            <div class="input-group">
-                <label>餐別</label>
-                <select id="meal-type">
-                    <option value="早餐">早餐</option>
-                    <option value="午餐">午餐</option>
-                    <option value="晚餐">晚餐</option>
-                    <option value="點心">點心 / 其他</option>
-                </select>
-            </div>
-
-            <div class="input-group">
-                <label>備註 (選填)</label>
-                <textarea id="meal-note" rows="3" placeholder="例如：今天胃口不錯"></textarea>
-            </div>
-
-            <button class="btn" onclick="simulateAnalysis()">送出分析</button>
-        </section>
-
-        <section id="analysis-screen" class="screen">
-            <h2>影像分析結果</h2>
-            <div class="disclaimer">
-                ⚠️ <strong>聲明：</strong>此為系統自動估算之參考資訊，並非醫療診斷。數值可能隨烹飪方式有所誤差。
-            </div>
-
-            <div class="result-grid">
-                <div class="result-card">
-                    <label>熱量估算</label>
-                    <span class="val" id="res-kcal">--</span><span class="unit">kcal</span>
+        <div id="view-upload" class="view">
+            <div class="section-title">影像辨識分析</div>
+            <div class="card">
+                <div class="camera-box" id="drop-zone">
+                    <input type="file" accept="image/*" onchange="app.handleFileSelect(event)">
+                    <div id="upload-placeholder">
+                        <div style="font-size: 3rem;">📷</div>
+                        <p style="color: #888;">點擊開啟相機</p>
+                    </div>
+                    <img id="preview" class="preview-img">
                 </div>
-                <div class="result-card">
-                    <label>蛋白質</label>
-                    <span class="val" id="res-protein">--</span><span class="unit">g</span>
+                <button class="btn btn-primary" style="margin-top: 15px;" onclick="app.startAnalysis()">開始 VLM 智能識別</button>
+            </div>
+
+            <div id="result-section" style="display: none;">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <h2 id="res-food-name">--</h2>
+                        <span id="res-badge" style="font-size: 0.8rem; font-weight: bold;">--</span>
+                    </div>
+                    <p style="color: var(--text-sub); font-size: 0.8rem;">分析信心度: <span id="res-confidence">--</span></p>
+                    <div id="res-ingredients" class="tag-wrap"></div>
+
+                    <div style="margin-top: 20px;" id="nutrition-chart"></div>
+
+                    <div id="res-advice-box" class="info-box">
+                        <ul id="res-advices" style="padding-left: 15px;"></ul>
+                    </div>
                 </div>
-                <div class="result-card">
-                    <label>碳水化合物</label>
-                    <span class="val" id="res-carbs">--</span><span class="unit">g</span>
+            </div>
+        </div>
+
+        <div id="view-profile" class="view">
+            <div class="section-title">個人電子病歷</div>
+            <div class="card" style="border-top: 4px solid var(--primary);">
+                <div style="display: flex; justify-content: space-between;">
+                    <h2 id="p-name">--</h2>
+                    <div style="text-align: right;"><small>BMI</small><br><b id="p-bmi" style="font-size: 1.2rem;">--</b></div>
                 </div>
-                <div class="result-card">
-                    <label>脂肪</label>
-                    <span class="val" id="res-fat">--</span><span class="unit">g</span>
+                <p id="p-details" style="color: var(--text-sub); font-size: 0.9rem; margin-bottom: 15px;">--</p>
+                
+                <div style="margin-bottom: 10px;">
+                    <label style="font-size: 0.8rem; color: #888;">臨床診斷</label>
+                    <div id="p-diseases" class="tag-wrap"></div>
                 </div>
-                <div class="result-card full">
-                    <label>建議質地等級 (IDDSI)</label>
-                    <span class="val" id="res-iddsi">Level --</span>
-                    <p style="font-size: 12px; color: var(--text-muted); margin: 5px 0 0 0;">
-                        依影像判斷，此餐點質地較接近上述等級。
-                    </p>
+                <div style="margin-bottom: 10px;">
+                    <label style="font-size: 0.8rem; color: #888;">當前藥物</label>
+                    <div id="p-meds" class="tag-wrap"></div>
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: #888;">過敏紀錄</label>
+                    <div id="p-allergies" class="tag-wrap"></div>
                 </div>
             </div>
 
-            <div class="disclaimer" style="background: #E0F2FE;">
-                💡 <strong>營養提醒：</strong>維持飲食多樣化有助於營養均衡，建議攝取足夠水分。
+            <div class="card">
+                <label style="font-size: 0.8rem; color: #888;">健康目標</label>
+                <p id="p-goal" style="font-weight: bold; color: var(--primary-dark); margin-top: 5px;">--</p>
             </div>
 
-            <button class="btn" onclick="saveAndFinish()">確認並返回首頁</button>
-        </section>
+            <button class="btn btn-secondary" onclick="app.switchPatient()">切換模擬病人 (Demo 測試)</button>
+        </div>
 
-        <section id="history-screen" class="screen">
-            <h3 onclick="navigateTo('dashboard-screen')" style="cursor: pointer;">← 返回首頁</h3>
-            <h2>歷史紀錄</h2>
-            <ul class="history-list" id="history-list">
-                </ul>
-        </section>
+        <div id="view-log" class="view">
+            <div class="section-title">飲食日誌列表</div>
+            <div class="card" style="padding: 5px;" id="log-list-container">
+                <div id="log-list"></div>
+            </div>
+            <button class="btn btn-outline" style="margin-top: 15px;" onclick="localStorage.removeItem('vlm_history'); app.loadLog();">清除歷史紀錄</button>
+        </div>
+
+        <div id="view-advice" class="view">
+            <div class="section-title">專業飲食指導</div>
+            <div class="card" style="background: #e1f5fe; border-left: 5px solid var(--secondary);">
+                <h4 style="color: #0277bd;">針對 <span id="advice-patient-name">--</span> 的建議</h4>
+            </div>
+            <div class="card">
+                <h4 style="color: var(--danger);">🚫 應避免 / 限制</h4>
+                <ul id="advice-avoid" style="margin: 10px 0 0 20px; font-size: 0.95rem; color: #444;"></ul>
+            </div>
+            <div class="card">
+                <h4 style="color: var(--success);">✅ 建議攝取</h4>
+                <ul id="advice-recommend" style="margin: 10px 0 0 20px; font-size: 0.95rem; color: #444;"></ul>
+            </div>
+        </div>
 
     </div>
 
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="app.navTo('view-home', this)">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            首頁
+        </div>
+        <div class="nav-item" onclick="app.navTo('view-upload', this)">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5 5 5z"/></svg>
+            拍照分析
+        </div>
+        <div class="nav-item" onclick="app.navTo('view-profile', this)">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            病歷
+        </div>
+        <div class="nav-item" onclick="app.navTo('view-log', this)">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3H6c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V9l-7-6zm0 1.5L18.5 10H13V4.5zM6 20V5h5v7h7v8H6z"/></svg>
+            日誌
+        </div>
+    </nav>
+
+    <div id="loading" class="overlay">
+        <div class="spinner"></div>
+        <h3 style="margin-top: 15px;">VLM 影像處理中...</h3>
+        <p id="loading-text" style="color: #666; font-size: 0.8rem;">正在識別食物成分與營養價值</p>
+    </div>
+
     <script>
-        // --- 模擬資料庫 ---
-        let historyData = [
-            { date: '2026-02-01', type: '早餐', kcal: 450, iddsi: '7', note: '一般吐司與蛋' },
-            { date: '2026-02-01', type: '午餐', kcal: 620, iddsi: '6', note: '軟質雞肉麵' }
+        /**
+         * NutriAI Mobile - 邏輯控制 (保持與原版相同邏輯)
+         */
+
+        const PATIENTS = [
+            {
+                name: "王小明",
+                age: 56, gender: "男", height: 172, weight: 78,
+                diseases: ["第2型糖尿病", "高血壓"],
+                meds: ["Metformin", "Amlodipine"],
+                allergies: ["無"],
+                goal: "嚴格控糖、減重",
+                advice: {
+                    avoid: ["含糖飲料 (全糖珍奶、可樂)", "高GI澱粉 (白吐司、糯米)", "高鈉加工品 (香腸、罐頭)"],
+                    recommend: ["高纖蔬菜 (地瓜葉、花椰菜)", "優質蛋白 (雞胸肉、豆腐)", "低GI全穀 (糙米、燕麥)"]
+                },
+                conditions: { dm: true, htn: true, ckd: false }
+            },
+            {
+                name: "林美玲",
+                age: 68, gender: "女", height: 155, weight: 52,
+                diseases: ["慢性腎臟病 (CKD)", "痛風"],
+                meds: ["利尿劑", "降尿酸藥"],
+                allergies: ["海鮮"],
+                goal: "低鈉、低鉀、低磷",
+                advice: {
+                    avoid: ["高鉀水果 (香蕉、奇異果)", "內臟類、高湯", "堅果與全穀類 (含磷高)"],
+                    recommend: ["低氮澱粉 (冬粉、米粉)", "川燙蔬菜 (去鉀)", "蛋白 (優質蛋白質)"]
+                },
+                conditions: { dm: false, htn: true, ckd: true }
+            }
         ];
 
-        let currentAnalysis = null;
+        const FOOD_DB = {
+            bento: { name: "台式排骨便當", calories: 850, carbs: 105, protein: 35, fat: 38, sodium: 1200, tags: ["油炸", "高鹽"] },
+            salad: { name: "雞肉凱薩沙拉", calories: 350, carbs: 15, protein: 28, fat: 22, sodium: 600, tags: ["生食", "低卡"] },
+            noodle: { name: "紅燒牛肉麵", calories: 750, carbs: 85, protein: 45, fat: 28, sodium: 2400, tags: ["湯品", "高鹽"] },
+            burger: { name: "起司牛肉漢堡", calories: 680, carbs: 45, protein: 32, fat: 40, sodium: 1350, tags: ["加工肉品"] }
+        };
 
-        // --- 路由切換 ---
-        function navigateTo(screenId) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
-            window.scrollTo(0, 0);
-        }
+        const app = {
+            currentPatientIdx: 0,
+            currentFile: null,
 
-        // --- 初始化日期 ---
-        document.getElementById('current-date').innerText = new Date().toLocaleDateString('zh-TW', {
-            year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
-        });
+            init: function() {
+                this.renderPatient();
+                this.loadLog();
+                this.navTo('view-home');
+            },
 
-        // --- 檔案上傳模擬 ---
-        function handleFile(input) {
-            if (input.files && input.files[0]) {
-                document.getElementById('upload-text').innerText = "✅ 已選取照片：" + input.files[0].name;
-            }
-        }
-
-        // --- 模擬分析流程 ---
-        function simulateAnalysis() {
-            document.getElementById('loading-overlay').style.display = 'flex';
-            
-            // 模擬 2 秒的 AI 辨識延遲
-            setTimeout(() => {
-                document.getElementById('loading-overlay').style.display = 'none';
+            navTo: function(viewId, navEl) {
+                // 切換視圖
+                document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+                document.getElementById(viewId).classList.add('active');
                 
-                // 產生隨機模擬數據
-                currentAnalysis = {
-                    date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD
-                    type: document.getElementById('meal-type').value,
-                    kcal: Math.floor(Math.random() * (700 - 300) + 300),
-                    protein: Math.floor(Math.random() * (30 - 15) + 15),
-                    carbs: Math.floor(Math.random() * (80 - 40) + 40),
-                    fat: Math.floor(Math.random() * (25 - 10) + 10),
-                    iddsi: Math.floor(Math.random() * 4 + 4), // 模擬 Level 4~7
-                    note: document.getElementById('meal-note').value
+                // 切換導覽列狀態
+                if(navEl) {
+                    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+                    navEl.classList.add('active');
+                }
+
+                window.scrollTo(0,0);
+                if(viewId === 'view-log') this.loadLog();
+                if(viewId === 'view-advice') this.renderAdvice();
+            },
+
+            switchPatient: function() {
+                this.currentPatientIdx = (this.currentPatientIdx + 1) % PATIENTS.length;
+                this.renderPatient();
+                this.renderAdvice();
+                alert(`已成功模擬切換至病人：${PATIENTS[this.currentPatientIdx].name}`);
+            },
+
+            renderPatient: function() {
+                const p = PATIENTS[this.currentPatientIdx];
+                const bmi = (p.weight / ((p.height/100) ** 2)).toFixed(1);
+                
+                document.getElementById('header-patient-name').textContent = p.name;
+                document.getElementById('home-greeting').textContent = `${p.name} 先生/女士`;
+                
+                document.getElementById('p-name').textContent = p.name;
+                document.getElementById('p-details').textContent = `${p.age}歲 / ${p.gender} / ${p.height}cm / ${p.weight}kg`;
+                document.getElementById('p-bmi').textContent = bmi;
+                document.getElementById('p-goal').textContent = p.goal;
+
+                const makeTags = (arr, cls, id) => {
+                    document.getElementById(id).innerHTML = arr.map(t => `<span class="tag ${cls}">${t}</span>`).join('');
                 };
+                makeTags(p.diseases, 'blue', 'p-diseases');
+                makeTags(p.meds, 'red', 'p-meds');
+                makeTags(p.allergies, 'red', 'p-allergies');
+            },
 
-                // 填入分析結果頁
-                document.getElementById('res-kcal').innerText = currentAnalysis.kcal;
-                document.getElementById('res-protein').innerText = currentAnalysis.protein;
-                document.getElementById('res-carbs').innerText = currentAnalysis.carbs;
-                document.getElementById('res-fat').innerText = currentAnalysis.fat;
-                document.getElementById('res-iddsi').innerText = "Level " + currentAnalysis.iddsi;
+            renderAdvice: function() {
+                const p = PATIENTS[this.currentPatientIdx];
+                document.getElementById('advice-patient-name').textContent = p.name;
+                document.getElementById('advice-avoid').innerHTML = p.advice.avoid.map(t => `<li>${t}</li>`).join('');
+                document.getElementById('advice-recommend').innerHTML = p.advice.recommend.map(t => `<li>${t}</li>`).join('');
+            },
 
-                navigateTo('analysis-screen');
-            }, 2000);
-        }
+            handleFileSelect: function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    this.currentFile = file;
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        document.getElementById('preview').src = evt.target.result;
+                        document.getElementById('preview').style.display = 'block';
+                        document.getElementById('upload-placeholder').style.display = 'none';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            },
 
-        // --- 儲存並返回 ---
-        function saveAndFinish() {
-            historyData.unshift(currentAnalysis); // 新增到列表最前方
-            document.getElementById('dashboard-status').innerText = `今日已記錄 ${currentAnalysis.type} (${currentAnalysis.kcal} kcal)`;
-            
-            // 清除輸入欄
-            document.getElementById('upload-text').innerText = "📸 點擊開啟相機 / 上傳";
-            document.getElementById('meal-note').value = "";
-            
-            navigateTo('dashboard-screen');
-        }
+            startAnalysis: function() {
+                document.getElementById('loading').style.display = 'flex';
+                setTimeout(() => {
+                    const keys = Object.keys(FOOD_DB);
+                    const key = this.currentFile ? keys[this.currentFile.name.length % keys.length] : keys[Math.floor(Math.random() * keys.length)];
+                    this.showResult(FOOD_DB[key]);
+                    document.getElementById('loading').style.display = 'none';
+                }, 2000);
+            },
 
-        // --- 渲染歷史紀錄 ---
-        function renderHistory() {
-            const list = document.getElementById('history-list');
-            list.innerHTML = '';
-            
-            historyData.forEach((item, index) => {
-                const li = document.createElement('li');
-                li.className = 'history-item';
-                li.onclick = () => alert(`詳細備註：${item.note || '無'}`);
-                li.innerHTML = `
-                    <div class="history-info">
-                        <h4>${item.date} ${item.type}</h4>
-                        <p>熱量: ${item.kcal} kcal | 質地: Level ${item.iddsi}</p>
-                    </div>
-                    <div style="color: var(--primary-color)">❯</div>
-                `;
-                list.appendChild(li);
-            });
-        }
+            showResult: function(food) {
+                const p = PATIENTS[this.currentPatientIdx];
+                document.getElementById('res-food-name').textContent = food.name;
+                document.getElementById('res-confidence').textContent = (85 + Math.floor(Math.random()*14)) + "%";
+                document.getElementById('res-ingredients').innerHTML = food.tags.map(t => `<span class="tag">${t}</span>`).join('');
+                
+                const badge = document.getElementById('res-badge');
+                const adviceBox = document.getElementById('res-advice-box');
+                const advices = document.getElementById('res-advices');
+                let adviceList = [];
+                let status = "safe";
+
+                if (p.conditions.ckd && food.sodium > 800) {
+                    status = "danger";
+                    adviceList.push("⚠️ 高鈉警告：腎臟負擔過重，建議避免食用");
+                } else if (p.conditions.dm && food.carbs > 80) {
+                    status = "warn";
+                    adviceList.push("✋ 控糖提醒：碳水含量極高，請減量並搭配蔬菜");
+                } else {
+                    adviceList.push("✅ 數值正常：符合您目前的飲食建議");
+                }
+
+                badge.textContent = status === "danger" ? "不建議" : (status === "warn" ? "請適量" : "推薦食用");
+                badge.style.color = status === "safe" ? "var(--success)" : (status === "danger" ? "var(--danger)" : "var(--accent)");
+                adviceBox.className = `info-box ${status}`;
+                advices.innerHTML = adviceList.map(t => `<li>${t}</li>`).join('');
+
+                const makeBar = (label, val, max, unit) => `
+                    <div class="nutri-row">
+                        <div class="nutri-label"><span>${label}</span><span>${val} ${unit}</span></div>
+                        <div class="bar-bg"><div class="bar-fill" id="bar-${label}" data-val="${(val/max)*100}"></div></div>
+                    </div>`;
+                
+                document.getElementById('nutrition-chart').innerHTML = 
+                    makeBar("熱量", food.calories, 1000, "kcal") +
+                    makeBar("碳水", food.carbs, 100, "g") +
+                    makeBar("蛋白質", food.protein, 50, "g") +
+                    makeBar("鈉", food.sodium, 2000, "mg");
+
+                setTimeout(() => {
+                    document.querySelectorAll('.bar-fill').forEach(bar => {
+                        bar.style.width = bar.getAttribute('data-val') + '%';
+                        if(parseFloat(bar.getAttribute('data-val')) > 80) bar.style.backgroundColor = 'var(--danger)';
+                    });
+                }, 100);
+
+                document.getElementById('result-section').style.display = 'block';
+                this.saveLog(food, p.name, status);
+            },
+
+            saveLog: function(food, pName, status) {
+                const record = {
+                    date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    food: food.name, patient: pName, cals: food.calories, status: status
+                };
+                const logs = JSON.parse(localStorage.getItem('vlm_history') || '[]');
+                logs.unshift(record);
+                localStorage.setItem('vlm_history', JSON.stringify(logs));
+            },
+
+            loadLog: function() {
+                const logs = JSON.parse(localStorage.getItem('vlm_history') || '[]');
+                const container = document.getElementById('log-list');
+                if (logs.length === 0) {
+                    container.innerHTML = '<p style="text-align:center; padding:30px; color:#999;">尚無飲食紀錄</p>';
+                    return;
+                }
+                container.innerHTML = logs.map(l => {
+                    const icon = l.status === 'danger' ? '❌' : (l.status === 'warn' ? '⚠️' : '✅');
+                    const bg = l.status === 'danger' ? '#ffebee' : (l.status === 'warn' ? '#fff3e0' : '#e8f5e9');
+                    return `
+                        <div class="log-card">
+                            <div class="log-icon" style="background:${bg}">${icon}</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight:bold; font-size:0.95rem;">${l.food}</div>
+                                <div style="font-size:0.75rem; color:#888;">${l.date} • ${l.patient}</div>
+                            </div>
+                            <div style="font-weight:bold; font-size:0.9rem;">${l.cals} kcal</div>
+                        </div>`;
+                }).join('');
+            }
+        };
+
+        window.onload = () => app.init();
     </script>
 </body>
 </html>
