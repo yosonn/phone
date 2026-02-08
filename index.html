@@ -3,342 +3,411 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NutriAI Web - 醫學級營養監測系統</title>
+    <title>NutriAI Web V3 - 醫用級數據視覺化</title>
     <style>
         :root {
             --primary: #00796b;
             --primary-light: #e0f2f1;
-            --secondary: #2196f3;
-            --accent: #ff9800;
-            --danger: #d32f2f;
-            --bg: #f4f7f6;
-            --sidebar-width: 240px;
-            --radius: 12px;
-            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --secondary: #0288d1;
+            --accent: #ffa000;
+            --danger: #e53935;
+            --success: #43a047;
+            --bg: #f0f4f7;
+            --sidebar-width: 260px;
+            --radius: 16px;
+            --shadow: 0 10px 25px rgba(0,0,0,0.05);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; }
-        body { background-color: var(--bg); display: flex; min-height: 100vh; color: #333; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; }
+        body { background-color: var(--bg); display: flex; min-height: 100vh; color: #2c3e50; }
 
-        /* --- 側邊導覽列 (Responsive Sidebar) --- */
+        /* --- 左側側邊欄 (Sidebar) --- */
         .sidebar {
             width: var(--sidebar-width);
             background: #fff;
-            border-right: 1px solid #ddd;
             display: flex;
             flex-direction: column;
             position: fixed;
             height: 100vh;
             z-index: 1000;
+            border-right: 1px solid rgba(0,0,0,0.05);
             transition: transform 0.3s ease;
         }
 
         .sidebar-header {
-            padding: 30px 20px;
-            font-size: 1.4rem;
-            font-weight: 800;
+            padding: 40px 25px;
+            font-size: 1.5rem;
+            font-weight: 900;
             color: var(--primary);
-            border-bottom: 1px solid #eee;
+            letter-spacing: 1px;
         }
 
-        .nav-menu { list-style: none; padding: 20px 0; flex-grow: 1; }
+        .nav-menu { list-style: none; padding: 10px 0; flex-grow: 1; }
         .nav-item {
-            padding: 15px 25px;
+            padding: 18px 30px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 15px;
             cursor: pointer;
-            color: #666;
-            font-weight: 500;
-            transition: 0.2s;
+            color: #7f8c8d;
+            font-weight: 600;
+            transition: all 0.3s;
         }
         .nav-item:hover, .nav-item.active {
             background: var(--primary-light);
             color: var(--primary);
-            border-right: 4px solid var(--primary);
+            border-right: 5px solid var(--primary);
         }
 
         /* --- 主要內容區 --- */
         .main-content {
             flex: 1;
             margin-left: var(--sidebar-width);
-            padding: 30px;
-            max-width: 1000px;
+            padding: 40px;
+            max-width: 1200px;
         }
 
-        .screen { display: none; animation: fadeIn 0.4s ease; }
+        .screen { display: none; animation: slideUp 0.4s ease-out; }
         .screen.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- UI 元件 --- */
-        .card { background: #fff; border-radius: var(--radius); padding: 20px; margin-bottom: 25px; box-shadow: var(--shadow); }
-        .section-title { margin-bottom: 20px; color: var(--primary); display: flex; align-items: center; gap: 8px; }
-        
-        /* 響應式 Grid */
-        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        /* --- 視覺化卡片元件 --- */
+        .card { background: #fff; border-radius: var(--radius); padding: 25px; margin-bottom: 30px; box-shadow: var(--shadow); border: 1px solid rgba(0,0,0,0.02); }
+        .section-title { font-size: 1.3rem; margin-bottom: 25px; color: #34495e; font-weight: 800; border-left: 5px solid var(--primary); padding-left: 15px; }
 
-        /* 食譜卡片 */
-        .recipe-card {
-            background: linear-gradient(to right, #ffffff, #f9f9f9);
-            border-left: 5px solid var(--secondary);
-            display: flex; gap: 15px; align-items: center; padding: 15px;
+        /* 進度圓餅圖 (CSS Conic-gradient) */
+        .chart-container { display: flex; align-items: center; gap: 40px; margin-bottom: 20px; flex-wrap: wrap; }
+        .progress-circle {
+            width: 150px; height: 150px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: conic-gradient(var(--primary) calc(var(--p) * 1%), #eee 0);
+            position: relative;
         }
-        .recipe-tag { font-size: 0.75rem; background: var(--secondary); color: white; padding: 2px 8px; border-radius: 4px; }
-
-        /* 慢性病數據指標 */
-        .metric-badge {
-            padding: 15px; border-radius: 10px; text-align: center;
-            background: #f8f9fa; border: 1px solid #eee;
+        .progress-circle::after {
+            content: ""; position: absolute; width: 120px; height: 120px; background: #fff; border-radius: 50%;
         }
-        .metric-val { font-size: 1.5rem; font-weight: bold; color: var(--primary); display: block; }
-        .metric-label { font-size: 0.8rem; color: #888; }
+        .progress-text { position: relative; z-index: 10; text-align: center; }
+        .progress-text b { font-size: 1.8rem; color: var(--primary); display: block; }
 
-        /* 拍照預覽與分析 */
-        .upload-box {
-            border: 2px dashed #ccc; border-radius: var(--radius); height: 250px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: #fafafa; position: relative; cursor: pointer;
+        /* 三餐建議食譜 */
+        .meal-plan { display: flex; flex-direction: column; gap: 15px; }
+        .recipe-item {
+            display: flex; align-items: center; gap: 20px; padding: 15px;
+            border-radius: 12px; background: #fafafa; border: 1px solid #f0f0f0; transition: 0.2s;
         }
-        .upload-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .btn {
-            background: var(--primary); color: white; border: none; padding: 12px 24px;
-            border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 15px;
-        }
+        .recipe-item:hover { transform: translateX(5px); border-color: var(--primary); }
+        .meal-icon { font-size: 2rem; width: 60px; height: 60px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
-        /* 歷史紀錄 (包含圖片) */
-        .history-item {
-            display: flex; gap: 15px; padding: 15px; border-bottom: 1px solid #eee; align-items: center;
-        }
-        .history-img { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; background: #eee; }
-        .history-info { flex: 1; }
-        .history-status { font-size: 0.8rem; font-weight: bold; padding: 4px 8px; border-radius: 4px; }
+        /* 歷史紀錄與詳情 */
+        .log-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .log-card { overflow: hidden; cursor: pointer; transition: 0.3s; }
+        .log-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
+        .log-thumb { width: 100%; height: 180px; object-fit: cover; }
+        .log-body { padding: 15px; }
 
-        /* --- 手機端適配 --- */
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); width: 200px; }
-            .sidebar.open { transform: translateX(0); }
-            .main-content { margin-left: 0; padding: 15px; }
-            .menu-toggle { display: block; position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; padding: 15px; border-radius: 50%; z-index: 2000; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        }
+        /* 詳情頁面樣式 (大圖與數據) */
+        .detail-view { display: flex; gap: 30px; flex-wrap: wrap; }
+        .detail-img-box { flex: 1; min-width: 300px; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+        .detail-img-box img { width: 100%; height: auto; display: block; }
+        .detail-info { flex: 1.2; min-width: 300px; }
 
-        .menu-toggle { display: none; border: none; cursor: pointer; font-size: 1.2rem; }
+        /* 營養數值視覺化小卡 */
+        .nutri-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .stat-box { padding: 15px; border-radius: 12px; text-align: center; background: #f8fafc; border-bottom: 4px solid #ddd; }
+        .stat-box.kcal { border-color: var(--secondary); }
+        .stat-box.protein { border-color: var(--success); }
+        .stat-box.carbs { border-color: var(--accent); }
+        .stat-box.iddsi { border-color: #546e7a; }
+        .stat-label { font-size: 0.8rem; color: #7f8c8d; margin-bottom: 5px; display: block; }
+        .stat-val { font-size: 1.4rem; font-weight: bold; }
 
-        .loader {
-            position: fixed; inset: 0; background: rgba(255,255,255,0.9);
-            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 5000;
+        /* 其他元件 */
+        .btn { background: var(--primary); color: white; border: none; padding: 15px 30px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn:hover { background: var(--primary-dark); opacity: 0.9; }
+
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); width: 0; }
+            .main-content { margin-left: 0; padding: 20px; }
+            .nav-item { padding: 18px 20px; }
         }
-        .spinner { width: 40px; height: 40px; border: 4px solid #eee; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
-
-    <div id="loading" class="loader">
-        <div class="spinner"></div>
-        <p style="margin-top:15px; font-weight:bold;">AI 影像分析與醫療比對中...</p>
-    </div>
-
-    <nav class="sidebar" id="sidebar">
+    <nav class="sidebar">
         <div class="sidebar-header">NutriAI Web</div>
         <ul class="nav-menu">
-            <li class="nav-item active" onclick="app.navTo('home', this)">🏠 首頁建議</li>
-            <li class="nav-item" onclick="app.navTo('add', this)">📸 飲食辨識</li>
-            <li class="nav-item" onclick="app.navTo('history', this)">📜 醫用日誌</li>
-            <li class="nav-item" onclick="app.navTo('profile', this)">👤 慢病數據</li>
+            <li class="nav-item active" onclick="app.navTo('home', this)">📊 數據總覽</li>
+            <li class="nav-item" onclick="app.navTo('add', this)">📸 影像辨識</li>
+            <li class="nav-item" onclick="app.navTo('history', this)">📜 飲食日誌</li>
+            <li class="nav-item" onclick="app.navTo('profile', this)">👤 慢病指標</li>
         </ul>
-        <div style="padding: 20px; font-size: 0.75rem; color: #aaa; border-top: 1px solid #eee;">
-            患者：吳宥辰<br>ID: NDHU-IM-021
+        <div style="padding: 25px; border-top: 1px solid #f0f0f0; font-size: 0.85rem; color: #95a5a6;">
+            患者：吳宥辰 (Yu-Chen)<br>NDHU 資管系大三專題
         </div>
     </nav>
 
     <main class="main-content">
         
         <section id="view-home" class="screen active">
-            <h2 class="section-title">今日建議食譜</h2>
-            <p style="color: #888; margin-bottom: 20px;">基於您的慢性病數據，為您挑選低鈉、低 GI 的餐點：</p>
-            
-            <div class="grid-2">
-                <div class="card recipe-card">
-                    <div style="font-size: 2.5rem;">🥣</div>
-                    <div>
-                        <span class="recipe-tag">早餐建議</span>
-                        <h4 style="margin: 5px 0;">無糖豆漿與燕麥碗</h4>
-                        <p style="font-size: 0.85rem; color: #666;">富含膳食纖維，有助於血糖平穩。</p>
+            <h2 class="section-title">今日營養追蹤總覽</h2>
+            <div class="card">
+                <div class="chart-container">
+                    <div class="progress-circle" id="cal-circle" style="--p: 58">
+                        <div class="progress-text">
+                            <b id="home-kcal-val">1,250</b>
+                            <small>已攝取卡路里</small>
+                        </div>
                     </div>
-                </div>
-                <div class="card recipe-card" style="border-left-color: var(--primary);">
-                    <div style="font-size: 2.5rem;">🥗</div>
-                    <div>
-                        <span class="recipe-tag">午餐建議</span>
-                        <h4 style="margin: 5px 0;">舒肥雞胸肉藜麥沙拉</h4>
-                        <p style="font-size: 0.85rem; color: #666;">高蛋白質、低飽和脂肪，適合血壓控制。</p>
+                    <div style="flex: 1;">
+                        <h4 style="margin-bottom:10px;">目標達成度：58%</h4>
+                        <p style="color:#7f8c8d; font-size:0.9rem; line-height:1.6;">
+                            您今天的目標攝取量為 2,150 kcal。目前碳水化合物比例稍高，建議晚餐選擇高蛋白質、低脂的餐點。
+                        </p>
                     </div>
                 </div>
             </div>
 
-            <div class="card" style="background: #fff8e1; border: none;">
-                <h4>💡 營養小提醒</h4>
-                <p style="font-size: 0.9rem; margin-top: 10px;">您昨晚的血壓略高，今日建議減少鹽分攝取，並補充 1500cc 以上的水分。</p>
+            <h2 class="section-title">個人化三餐建議食譜</h2>
+            <div class="meal-plan">
+                <div class="recipe-item">
+                    <div class="meal-icon">🍳</div>
+                    <div style="flex:1;">
+                        <small style="color:var(--primary); font-weight:bold;">早餐建議</small>
+                        <h4>無糖豆漿 + 全麥堅果吐司</h4>
+                        <p style="font-size:0.85rem; color:#666;">低血糖負載(GL)，適合清晨血糖穩定。</p>
+                    </div>
+                    <div style="text-align:right;">320 kcal</div>
+                </div>
+                <div class="recipe-item">
+                    <div class="meal-icon">🍱</div>
+                    <div style="flex:1;">
+                        <small style="color:var(--secondary); font-weight:bold;">午餐建議</small>
+                        <h4>清蒸魚肉 + 糙米飯 + 多色蔬菜</h4>
+                        <p style="font-size:0.85rem; color:#666;">優質蛋白質與複合澱粉，維持下午體力。</p>
+                    </div>
+                    <div style="text-align:right;">650 kcal</div>
+                </div>
+                <div class="recipe-item">
+                    <div class="meal-icon">🥘</div>
+                    <div style="flex:1;">
+                        <small style="color:var(--accent); font-weight:bold;">晚餐建議</small>
+                        <h4>嫩豆腐肉燥絲瓜 + 清燙秋葵</h4>
+                        <p style="font-size:0.85rem; color:#666;">輕盈無負擔，幫助夜間睡眠與消化。</p>
+                    </div>
+                    <div style="text-align:right;">480 kcal</div>
+                </div>
             </div>
         </section>
 
         <section id="view-add" class="screen">
-            <h2 class="section-title">影像營養分析</h2>
-            <div class="card">
-                <div class="upload-box" onclick="document.getElementById('img-input').click()">
-                    <input type="file" id="img-input" hidden accept="image/*" onchange="app.previewImage(this)">
-                    <div id="upload-placeholder">
-                        <p style="font-size: 3rem;">📸</p>
-                        <p>點擊上傳或拍攝餐點照片</p>
+            <h2 class="section-title">拍照記錄與 AI 分析</h2>
+            <div class="card" id="upload-panel">
+                <div style="border: 2px dashed #ccc; border-radius: var(--radius); height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fafafa; cursor: pointer;" onclick="document.getElementById('input-file').click()">
+                    <input type="file" id="input-file" hidden accept="image/*" onchange="app.handleUpload(this)">
+                    <div id="placeholder">
+                        <p style="font-size: 4rem;">📸</p>
+                        <p style="font-weight:bold; color:#888;">點擊上傳餐點照片</p>
                     </div>
-                    <img id="img-preview" src="" style="display:none">
+                    <img id="upload-preview" src="" style="display:none; max-width:100%; max-height:100%; border-radius:12px;">
                 </div>
-                <button class="btn" onclick="app.runAnalysis()">開始 AI VLM 辨識</button>
+                <button class="btn" style="width:100%; margin-top:20px;" onclick="app.startVLM()">啟動智慧營養辨識</button>
             </div>
 
             <div id="analysis-result" style="display: none;">
-                <div class="card" style="border-top: 5px solid var(--primary);">
-                    <h3 id="res-name">辨識結果</h3>
-                    <div class="grid-2" style="margin-top:15px;">
-                        <div class="metric-badge"><span class="metric-label">熱量</span><span class="metric-val" id="res-kcal">0</span>kcal</div>
-                        <div class="metric-badge"><span class="metric-label">蛋白質</span><span class="metric-val" id="res-p">0</span>g</div>
-                        <div class="metric-badge"><span class="metric-label">碳水</span><span class="metric-val" id="res-c">0</span>g</div>
-                        <div class="metric-badge"><span class="metric-label">質地 (IDDSI)</span><span class="metric-val" id="res-iddsi">L0</span></div>
+                <div class="card">
+                    <h2 id="vlm-food-name" style="margin-bottom:20px; color:var(--primary);">--</h2>
+                    <div class="detail-view">
+                        <div class="detail-img-box"><img id="res-img" src=""></div>
+                        <div class="detail-info">
+                            <div class="nutri-stat-grid">
+                                <div class="stat-box kcal"><span class="stat-label">能量估算</span><b class="stat-val" id="res-kcal">--</b> kcal</div>
+                                <div class="stat-box protein"><span class="stat-label">蛋白質</span><b class="stat-val" id="res-p">--</b> g</div>
+                                <div class="stat-box carbs"><span class="stat-label">碳水化合物</span><b class="stat-val" id="res-c">--</b> g</div>
+                                <div class="stat-box iddsi"><span class="stat-label">質地等級</span><b class="stat-val" id="res-iddsi">--</b></div>
+                            </div>
+                            <div style="margin-top:25px; padding:15px; background:#fff3e0; border-radius:10px; font-size:0.9rem;">
+                                ⚠️ <b>聲明：</b>此數據由 VLM 視覺模型估算，僅供參考，不具醫療處方效力。
+                            </div>
+                            <button class="btn" style="margin-top:20px; width:100%;" onclick="app.saveToLog()">確認存入日誌</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
         <section id="view-history" class="screen">
-            <h2 class="section-title">醫用飲食紀錄</h2>
-            <div class="card" style="padding:0;">
-                <div id="history-container">
-                    </div>
-            </div>
+            <h2 class="section-title">飲食日誌回顧</h2>
+            <div class="log-grid" id="history-container">
+                </div>
+        </section>
+
+        <section id="view-detail" class="screen">
+            <button onclick="app.navTo('history')" style="margin-bottom:20px; background:none; border:none; color:var(--primary); font-weight:bold; cursor:pointer;">← 返回日誌列表</button>
+            <h2 class="section-title" id="detail-title">餐點詳細資料</h2>
+            <div class="card" id="detail-card-content">
+                </div>
         </section>
 
         <section id="view-profile" class="screen">
-            <h2 class="section-title">慢性病健康指標</h2>
+            <h2 class="section-title">慢性病健康指標監測</h2>
             <div class="card">
-                <div class="grid-2">
-                    <div class="metric-badge">
-                        <span class="metric-label">收縮壓 / 舒張壓</span>
-                        <span class="metric-val">128 / 84</span>
-                        <small style="color:var(--accent)">略高於標準</small>
-                    </div>
-                    <div class="metric-badge">
-                        <span class="metric-label">空腹血糖 (mg/dL)</span>
-                        <span class="metric-val">98</span>
-                        <small style="color:var(--success)">正常</small>
-                    </div>
-                    <div class="metric-badge">
-                        <span class="metric-label">糖化血色素 (HbA1c)</span>
-                        <span class="metric-val">5.8%</span>
-                        <small style="color:var(--success)">控制良好</small>
-                    </div>
-                    <div class="metric-badge">
-                        <span class="metric-label">最新體重 (kg)</span>
-                        <span class="metric-val">74.5</span>
-                        <small>BMI: 24.2</small>
-                    </div>
+                <div class="nutri-stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <div class="stat-box" style="border-color:var(--primary);"><span class="stat-label">收縮壓 / 舒張壓</span><b class="stat-val">128 / 84</b><small>mmHg</small></div>
+                    <div class="stat-box" style="border-color:var(--accent);"><span class="stat-label">空腹血糖</span><b class="stat-val">98</b><small>mg/dL</small></div>
+                    <div class="stat-box" style="border-color:var(--danger);"><span class="stat-label">HbA1c 糖化血色素</span><b class="stat-val">5.8</b><small>%</small></div>
+                    <div class="stat-box" style="border-color:var(--secondary);"><span class="stat-label">當前體重</span><b class="stat-val">74.5</b><small>kg</small></div>
                 </div>
-            </div>
-
-            <div class="card">
-                <h4 style="margin-bottom:10px;">👨‍⚕️ 醫生叮嚀</h4>
-                <p style="font-size: 0.95rem; line-height: 1.6; color: #555;">
-                    「吳先生您好，根據過去一週的飲食照片顯示，您的晚餐澱粉比例較高，導致隔日晨間血壓有波動。建議晚上多補充葉菜類，並維持每日 30 分鐘的快走。」
-                </p>
             </div>
         </section>
 
     </main>
 
+    <div id="loading" style="position:fixed; inset:0; background:rgba(255,255,255,0.9); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:5000;">
+        <div style="width:50px; height:50px; border:5px solid #eee; border-top:5px solid var(--primary); border-radius:50%; animation:spin 1s linear infinite;"></div>
+        <p style="margin-top:15px; font-weight:bold; color:var(--primary);">AI 視覺引擎運算中...</p>
+    </div>
+
+    <style> @keyframes spin { to { transform: rotate(360deg); } } </style>
+
     <script>
         // --- 核心應用邏輯 ---
         const app = {
-            db: [
-                { name: '紅燒牛肉麵', kcal: 720, p: 35, c: 85, iddsi: 'Level 7', status: '不建議', img: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=200&q=80', date: '2026-02-07' },
-                { name: '燙青菜與雞肉', kcal: 310, p: 28, c: 10, iddsi: 'Level 6', status: '推薦', img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&q=80', date: '2026-02-08' }
+            // 預設歷史紀錄
+            history: [
+                { id: 101, name: '煎鮭魚穀物飯', kcal: 540, p: 32, c: 55, iddsi: 'L7', date: '2026-02-08 12:30', img: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=800&q=80' },
+                { id: 102, name: '雞肉堅果沙拉', kcal: 420, p: 28, c: 15, iddsi: 'L7', date: '2026-02-08 08:15', img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80' }
             ],
+            currentAnalysis: null,
+
+            init: function() {
+                this.renderHistory();
+            },
 
             navTo: function(screenId, el) {
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                 document.getElementById('view-' + screenId).classList.add('active');
                 
-                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-                el.classList.add('active');
-
-                if (screenId === 'history') this.renderHistory();
-                if (window.innerWidth <= 768) toggleSidebar(); // 手機版自動收起選單
+                if (el) {
+                    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                    el.classList.add('active');
+                }
+                window.scrollTo(0, 0);
             },
 
-            previewImage: function(input) {
+            handleUpload: function(input) {
                 if (input.files && input.files[0]) {
                     const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const preview = document.getElementById('img-preview');
-                        preview.src = e.target.result;
-                        preview.style.display = 'block';
-                        document.getElementById('upload-placeholder').style.display = 'none';
+                    reader.onload = (e) => {
+                        document.getElementById('upload-preview').src = e.target.result;
+                        document.getElementById('upload-preview').style.display = 'block';
+                        document.getElementById('placeholder').style.display = 'none';
+                        this.currentAnalysis = { img: e.target.result };
                     }
                     reader.readAsDataURL(input.files[0]);
                 }
             },
 
-            runAnalysis: function() {
+            startVLM: function() {
+                if (!this.currentAnalysis) { alert("請先上傳照片"); return; }
+                
                 document.getElementById('loading').style.display = 'flex';
+                
                 setTimeout(() => {
                     document.getElementById('loading').style.display = 'none';
+                    document.getElementById('upload-panel').style.display = 'none';
                     document.getElementById('analysis-result').style.display = 'block';
                     
-                    // 模擬假數據
-                    const mock = { name: "煎鮭魚穀物飯", kcal: 540, p: 32, c: 55, iddsi: "L7" };
-                    document.getElementById('res-name').innerText = mock.name;
+                    // 根據您提供的圖片數值進行填充
+                    const mock = { 
+                        name: "煎鮭魚穀物飯", 
+                        kcal: 540, 
+                        p: 32, 
+                        c: 55, 
+                        iddsi: "L7" 
+                    };
+                    
+                    this.currentAnalysis = { ...this.currentAnalysis, ...mock };
+                    
+                    document.getElementById('vlm-food-name').innerText = mock.name;
+                    document.getElementById('res-img').src = this.currentAnalysis.img;
                     document.getElementById('res-kcal').innerText = mock.kcal;
                     document.getElementById('res-p').innerText = mock.p;
                     document.getElementById('res-c').innerText = mock.c;
                     document.getElementById('res-iddsi').innerText = mock.iddsi;
+                    
+                }, 1800);
+            },
 
-                    // 加入歷史紀錄 (模擬)
-                    const previewSrc = document.getElementById('img-preview').src;
-                    this.db.unshift({
-                        name: mock.name, kcal: mock.kcal, p: mock.p, c: mock.c, 
-                        iddsi: mock.iddsi, status: '良好', img: previewSrc, date: '今日'
-                    });
-                }, 2000);
+            saveToLog: function() {
+                const newRecord = { 
+                    ...this.currentAnalysis, 
+                    id: Date.now(), 
+                    date: new Date().toLocaleString() 
+                };
+                this.history.unshift(newRecord);
+                this.renderHistory();
+                
+                // 更新首頁數據 (模擬)
+                const currentTotal = parseInt(document.getElementById('home-kcal-val').innerText.replace(',',''));
+                document.getElementById('home-kcal-val').innerText = (currentTotal + newRecord.kcal).toLocaleString();
+                
+                alert("已成功存入飲食日誌");
+                this.navTo('history');
+                
+                // 重置上傳區
+                document.getElementById('upload-panel').style.display = 'block';
+                document.getElementById('analysis-result').style.display = 'none';
+                document.getElementById('upload-preview').style.display = 'none';
+                document.getElementById('placeholder').style.display = 'flex';
+                this.currentAnalysis = null;
             },
 
             renderHistory: function() {
                 const container = document.getElementById('history-container');
-                container.innerHTML = this.db.map(item => `
-                    <div class="history-item">
-                        <img src="${item.img}" class="history-img">
-                        <div class="history-info">
-                            <div style="display:flex; justify-content:space-between;">
-                                <strong>${item.name}</strong>
-                                <small style="color:#999;">${item.date}</small>
+                container.innerHTML = this.history.map(item => `
+                    <div class="card log-card" onclick="app.showDetail(${item.id})">
+                        <img src="${item.img}" class="log-thumb">
+                        <div class="log-body">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                                <b>${item.name}</b>
+                                <span style="color:var(--primary); font-weight:bold;">${item.kcal} kcal</span>
                             </div>
-                            <p style="font-size:0.85rem; color:#666; margin:4px 0;">熱量: ${item.kcal} kcal | 蛋白質: ${item.p}g</p>
-                            <span class="history-status" style="background:${item.status === '推薦' || item.status === '良好' ? '#e8f5e9; color:#2e7d32;' : '#ffebee; color:#c62828;'}">
-                                ${item.status}
-                            </span>
+                            <small style="color:#999;">${item.date}</small>
                         </div>
                     </div>
                 `).join('');
+            },
+
+            showDetail: function(id) {
+                const item = this.history.find(x => x.id === id);
+                if (!item) return;
+
+                const detailCard = document.getElementById('detail-card-content');
+                detailCard.innerHTML = `
+                    <h2 style="margin-bottom:20px; color:var(--primary);">${item.name}</h2>
+                    <div class="detail-view">
+                        <div class="detail-img-box"><img src="${item.img}"></div>
+                        <div class="detail-info">
+                            <div class="nutri-stat-grid">
+                                <div class="stat-box kcal"><span class="stat-label">能量估算</span><b class="stat-val">${item.kcal}</b> kcal</div>
+                                <div class="stat-box protein"><span class="stat-label">蛋白質</span><b class="stat-val">${item.p}</b> g</div>
+                                <div class="stat-box carbs"><span class="stat-label">碳水化合物</span><b class="stat-val">${item.c}</b> g</div>
+                                <div class="stat-box iddsi"><span class="stat-label">質地等級</span><b class="stat-val">${item.iddsi}</b></div>
+                            </div>
+                            <div style="margin-top:25px;">
+                                <p style="color:#666;"><b>紀錄日期：</b>${item.date}</p>
+                                <p style="color:#666; margin-top:10px;"><b>AI VLM 備註：</b>系統識別此餐點質地符合 IDDSI Level 7 標準，建議搭配充足水分攝取。</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                this.navTo('detail');
             }
         };
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-        }
-
-        // 初始化
-        window.onload = () => {
-            app.renderHistory();
-        };
+        app.init();
     </script>
 </body>
 </html>
